@@ -1,5 +1,30 @@
-@()
+@import org.pac4j.core.profile.UserProfile
+@(profile: Option[org.pac4j.core.profile.UserProfile])
 
-@main("Welcome to Play") {
-  <h1>Welcome to Play!</h1>
+@main("Welcome") {
+<h1>Welcome!!</h1>
+
+@profile match {
+case Some(pf) => {
+<p>
+  Attribute "name": @pf.getAttribute("name")
+
+</p>
+<p>
+  TypedId: @pf.getTypedId()
+</p>
+<p>
+  Attribute "picture": <img src='@pf.getAttribute("picture")' />
+</p>
+<div>
+  <a href="/sign-out">Sign out</a>
+</div>
+}
+case None => {
+<div>
+  <a href="/sign-in">Sign in</a>
+</div>
+}
+}
+
 }
