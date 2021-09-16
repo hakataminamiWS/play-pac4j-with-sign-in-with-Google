@@ -19,6 +19,11 @@ import org.pac4j.oidc.client.GoogleOidcClient
 import org.pac4j.oidc.client.OidcClient
 import org.pac4j.oidc.config.OidcConfiguration
 
+import com.nimbusds.jose.JWSAlgorithm
+
+import oidc.client.LineOidcClient
+import oidc.config.LineOidcConfiguration
+
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
@@ -59,8 +64,31 @@ class SecurityModule(environment: Environment, configuration: Configuration)
   }
 
   @Provides
-  def provideConfig(googleOidcClient: GoogleOidcClient): Config = {
-    val clients = new Clients(baseUrl + "/callback", googleOidcClient)
+  def provideLineOidcClient: LineOidcClient = {
+    val oidcConfig = new LineOidcConfiguration()
+    oidcConfig.setClientId(configuration.get[String]("pac4j.line.channelID"))
+    oidcConfig.setSecret(configuration.get[String]("pac4j.line.channelSecret"))
+    oidcConfig.setDiscoveryURI(
+      configuration.get[String]("pac4j.line.discoveryURI")
+    )
+    oidcConfig.addCustomParam("prompt", "consent")
+    oidcConfig.setResponseType("code")
+    oidcConfig.setScope("profile openid")
+    oidcConfig.setUseNonce(true)
+    oidcConfig.setWithState(true)
+    oidcConfig.setIDTokenJwsAlgorithm(JWSAlgorithm.HS256)
+
+    val lineOidcClient = new LineOidcClient(oidcConfig)
+    lineOidcClient
+  }
+
+  @Provides
+  def provideConfig(
+      googleOidcClient: GoogleOidcClient,
+      lineOidcClient: LineOidcClient
+  ): Config = {
+    val clients =
+      new Clients(baseUrl + "/callback", googleOidcClient, lineOidcClient)
 
     val config = new Config(clients)
     config.setHttpActionAdapter(new PlayHttpActionAdapter())

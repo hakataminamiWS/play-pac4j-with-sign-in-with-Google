@@ -5,7 +5,8 @@
 
 # An example controller showing a sample home page
 GET     /                           controllers.Application.index
-GET     /sign-in                    controllers.Application.googleOidcIndex
+GET     /sign-in-with-google        controllers.Application.googleOidcIndex
+GET     /sign-in-with-line          controllers.Application.lineOidcIndex
 
 GET     /sign-out                  @org.pac4j.play.LogoutController.logout(request: Request)
 GET     /callback                  @org.pac4j.play.CallbackController.callback(request: Request)

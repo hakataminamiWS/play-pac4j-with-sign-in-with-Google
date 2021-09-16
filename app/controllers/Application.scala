@@ -16,7 +16,7 @@ import org.pac4j.core.context.session.SessionStore
 import org.pac4j.play.store.PlayCacheSessionStore
 
 class Application @Inject() (
-    val controllerComponents: SecurityComponents,
+    val controllerComponents: SecurityComponents
 ) extends Security[CommonProfile] {
 
   private def getProfile(implicit
@@ -37,4 +37,7 @@ class Application @Inject() (
     Ok(views.html.index(getProfile(request)))
   }
 
+  def lineOidcIndex = Secure("LineOidcClient") { implicit request =>
+    Ok(views.html.index(getProfile(request)))
+  }
 }
