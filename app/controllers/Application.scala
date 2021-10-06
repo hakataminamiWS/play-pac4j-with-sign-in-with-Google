@@ -17,21 +17,23 @@ import play.api.mvc.Request
 import play.api.mvc.Result
 import scala.concurrent.Future
 
-import play.api.cache.redis.CacheApi
+// import play.api.cache.redis.CacheApi
 import scala.concurrent.duration._
+import org.pac4j.oidc.profile.OidcProfile
 
 class Application @Inject() (
-    val controllerComponents: SecurityComponents,
-    cache: CacheApi
+    val controllerComponents: SecurityComponents
+    // cache: CacheApi
 ) extends Security[CommonProfile] {
 
   private def getProfile(implicit
       request: RequestHeader
-  ): Option[UserProfile] = {
+  ): Option[OidcProfile] = {
     val webContext = new PlayWebContext(request)
     val profileManager =
       new ProfileManager(webContext, controllerComponents.sessionStore)
-    val profile = profileManager.getProfile()
+    val profile = profileManager.getProfile(classOf[OidcProfile])
+        // val profile = profileManager.getProfile(classOf[OidcProfile]).get()
     profile.toScala
   }
 
@@ -40,7 +42,7 @@ class Application @Inject() (
   }
 
   def googleOidcIndex =
-    (Secure("GoogleOidcClient") andThen refreshExpirationOneHour) {
+    (Secure(clients = "GoogleOidcClient", authorizers = null)) {
       implicit request =>
         Ok(views.html.index(getProfile(request)))
     }
@@ -59,10 +61,10 @@ class Application @Inject() (
     ): Future[Option[Result]] = {
       val webContext = new PlayWebContext(request)
       // refreshes expiration of the key if present
-      sessionStore
-        .getSessionId(webContext, false)
-        .toScala
-        .map(sessionId => cache.expire(sessionId, 1.hour))
+      // sessionStore
+      //   .getSessionId(webContext, false)
+      //   .toScala
+      //   .map(sessionId => cache.expire(sessionId, 1.hour))
       Future(None)
     }
   }

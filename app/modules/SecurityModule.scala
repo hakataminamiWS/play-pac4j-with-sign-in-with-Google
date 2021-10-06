@@ -24,13 +24,29 @@ import com.nimbusds.jose.JWSAlgorithm
 import oidc.client.LineOidcClient
 import oidc.config.LineOidcConfiguration
 
+import org.pac4j.play.store.PlayCookieSessionStore
+import org.pac4j.play.store.ShiroAesDataEncrypter
+import java.nio.charset.StandardCharsets
+import store.ModPlayCookieSessionStore
+
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
   val baseUrl: String = configuration.get[String]("pac4j.baseUrl")
 
   override def configure(): Unit = {
-    bind(classOf[SessionStore]).to(classOf[PlayCacheSessionStore])
+    // for serialize custom profile
+    PlayCookieSessionStore.JAVA_SERIALIZER.addTrustedClass(classOf[oidc.profile.LineOidcProfile])
+
+    // sessionStore, SecurityComponents
+    val sKey = "testTestTestTestTest".substring(0, 16)
+    // configuration.get[String]("play.http.secret.key").substring(0, 16)
+    val dataEncrypter = new ShiroAesDataEncrypter(
+      sKey.getBytes(StandardCharsets.UTF_8)
+    )
+    val modPlaySessionStore = new ModPlayCookieSessionStore(dataEncrypter)
+    bind(classOf[SessionStore]).toInstance(modPlaySessionStore)
+
     bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
 
     // callback

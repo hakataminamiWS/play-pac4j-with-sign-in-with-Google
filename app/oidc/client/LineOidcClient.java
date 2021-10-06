@@ -2,6 +2,7 @@ package oidc.client;
 
 import org.pac4j.oidc.config.OidcConfiguration;
 import org.pac4j.oidc.profile.OidcProfileDefinition;
+import org.pac4j.oidc.profile.OidcProfile;
 import org.pac4j.oidc.profile.creator.OidcProfileCreator;
 
 import org.pac4j.oidc.client.OidcClient;

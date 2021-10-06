@@ -1,5 +1,6 @@
 @import org.pac4j.core.profile.UserProfile
-@(profile: Option[org.pac4j.core.profile.UserProfile])
+@import org.pac4j.oidc.profile.OidcProfile
+@(profile: Option[org.pac4j.oidc.profile.OidcProfile])
 
 @main("Welcome") {
 <h1>Welcome!!</h1>
@@ -7,27 +8,19 @@
 @profile match {
 case Some(pf) => {
 <p>
-  Attribute "name": @pf.getAttribute("name")
-
-</p>
-<p>
   TypedId: @pf.getTypedId()
 </p>
 <p>
-  Attribute "picture": <img src='@pf.getAttribute("picture")' />
+  Name: @pf.getDisplayName()
+</p>
+<p>
+  Picture: <img src='@pf.getPictureUrl()' />
 </p>
 <div>
   <a href="/sign-out">Sign out</a>
 </div>
 }
 case None => {
-<div>
-  <a href="/sign-in-with-google">Sign in with Google</a>
-</div>
-<div>
-  <a href="/sign-in-with-line">Sign in with LINE</a>
-</div>
 }
 }
-
 }

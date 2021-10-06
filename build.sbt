@@ -12,8 +12,8 @@ libraryDependencies += guice
 
 // for play-redis
 // https://github.com/KarelCemus/play-redis
-libraryDependencies += cacheApi
-libraryDependencies += "com.github.karelcemus" %% "play-redis" % "2.6.1"
+// libraryDependencies += cacheApi
+// libraryDependencies += "com.github.karelcemus" %% "play-redis" % "2.6.1"
 
 // for play-pac4j
 // libraryDependencies += ehcache
@@ -23,6 +23,7 @@ val pac4jVersion = "5.1.3"
 libraryDependencies += "org.pac4j" %% "play-pac4j" % playPac4jVersion
 libraryDependencies += "org.pac4j" % "pac4j-oauth" % pac4jVersion
 libraryDependencies += "org.pac4j" % "pac4j-oidc" % pac4jVersion
+libraryDependencies += "org.apache.shiro" % "shiro-core" % "1.8.0"
 dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-databind" % "2.11.4"
 
 // for akka serializer

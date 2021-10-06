@@ -1,6 +1,7 @@
 package oidc.profile;
 
 import org.pac4j.oidc.profile.OidcProfile;
+import org.pac4j.core.util.serializer.JavaSerializer;
 
 /**
  * <p>This class is the user profile for LINE (using OpenID Connect protocol) with appropriate getters.</p>

@@ -3,9 +3,13 @@ package oidc.config;
 import org.pac4j.oidc.config.OidcConfiguration;
 import com.nimbusds.jose.JWSAlgorithm;
 
+import org.pac4j.core.util.serializer.JavaSerializer;
+import oidc.profile.LineOidcProfile;
+
 // Directly add jwsAlgorithm, 
 // Because LINE only support HS256 jwsAlgorithm for id token, and pac4j configuration do not read id token header's alg 
 public class LineOidcConfiguration extends OidcConfiguration {
+
     public void setIDTokenJwsAlgorithm(final JWSAlgorithm jwsAlgorithm) {
         var meta = this.findProviderMetadata();
         meta.getIDTokenJWSAlgs().add(jwsAlgorithm);
