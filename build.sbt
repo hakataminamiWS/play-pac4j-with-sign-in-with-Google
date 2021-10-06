@@ -10,14 +10,7 @@ scalaVersion := "2.13.6"
 libraryDependencies += guice
 // libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
 
-// for play-redis
-// https://github.com/KarelCemus/play-redis
-// libraryDependencies += cacheApi
-// libraryDependencies += "com.github.karelcemus" %% "play-redis" % "2.6.1"
-
 // for play-pac4j
-// libraryDependencies += ehcache
-// libraryDependencies += caffeine
 val playPac4jVersion = "11.0.0-PLAY2.8"
 val pac4jVersion = "5.1.3"
 libraryDependencies += "org.pac4j" %% "play-pac4j" % playPac4jVersion

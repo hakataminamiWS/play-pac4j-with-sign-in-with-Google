@@ -3,6 +3,7 @@ Minimal Function of [play-pac4j](https://github.com/pac4j/play-pac4j/tree/4e3e88
 
 * [Sign in With Google](https://developers.google.com/identity/gsi/web)
 * [LINE Login v2.1](https://developers.line.biz/en/docs/line-login/overview/)
+* [PlayCookieSessionStore](https://github.com/pac4j/play-pac4j/wiki/Security-configuration#2-choose-the-right-sessionstore)
 
 This repository was made [Giter8 template for generating a Play project seed (2.8.x)](https://github.com/playframework/play-scala-seed.g8/tree/087440184b321fe1d18769efa41a86a717c7fcdd) and a part of [play-pac4j](https://github.com/pac4j/play-pac4j/tree/4e3e8866fdc682996a6cd9f0b0be0877c1930071).
 

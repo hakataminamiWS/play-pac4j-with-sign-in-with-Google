@@ -1,11 +1,13 @@
 package oidc.client;
 
 import org.pac4j.oidc.config.OidcConfiguration;
+
+import org.pac4j.oidc.client.OidcClient;
+
 import org.pac4j.oidc.profile.OidcProfileDefinition;
 import org.pac4j.oidc.profile.OidcProfile;
 import org.pac4j.oidc.profile.creator.OidcProfileCreator;
 
-import org.pac4j.oidc.client.OidcClient;
 import com.nimbusds.jose.JWSAlgorithm;
 
 import oidc.profile.LineOidcProfile;
@@ -22,7 +24,6 @@ public class LineOidcClient extends OidcClient {
 
     public LineOidcClient(final OidcConfiguration configuration) {
         super(configuration);
-        // configuration.setIDTokenJWSAlgs(JWSAlgorithm.HS256);
     }
 
     @Override

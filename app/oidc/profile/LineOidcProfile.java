@@ -1,6 +1,7 @@
 package oidc.profile;
 
 import org.pac4j.oidc.profile.OidcProfile;
+
 import org.pac4j.core.util.serializer.JavaSerializer;
 
 /**
@@ -9,6 +10,5 @@ import org.pac4j.core.util.serializer.JavaSerializer;
  *
  */
 public class LineOidcProfile extends OidcProfile {
-
     private static final long serialVersionUID = -1L;
 }

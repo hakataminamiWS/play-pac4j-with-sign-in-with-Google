@@ -12,10 +12,8 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 
 /**
- * A session store which only uses the Play Session cookie for storage, allowing for a stateless backend.
+ * for clear non used profile attributes, override clearUserProfiles of PlayCookieSessionStore.
  *
- * @author 
- * @since 6.1.0
  */
 @Singleton
 public class ModPlayCookieSessionStore extends PlayCookieSessionStore {

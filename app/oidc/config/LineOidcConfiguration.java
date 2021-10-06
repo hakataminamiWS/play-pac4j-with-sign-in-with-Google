@@ -1,9 +1,11 @@
 package oidc.config;
 
+import org.pac4j.core.util.serializer.JavaSerializer;
+
 import org.pac4j.oidc.config.OidcConfiguration;
+
 import com.nimbusds.jose.JWSAlgorithm;
 
-import org.pac4j.core.util.serializer.JavaSerializer;
 import oidc.profile.LineOidcProfile;
 
 // Directly add jwsAlgorithm, 
