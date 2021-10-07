@@ -39,8 +39,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     PlayCookieSessionStore.JAVA_SERIALIZER.addTrustedClass(classOf[oidc.profile.LineOidcProfile])
 
     // sessionStore, SecurityComponents
-    val sKey = "testTestTestTestTest".substring(0, 16)
-    // configuration.get[String]("play.http.secret.key").substring(0, 16)
+    val sKey =  configuration.get[String]("pac4j.play.selialiser.secret.key").substring(0, 16)
     val dataEncrypter = new ShiroAesDataEncrypter(
       sKey.getBytes(StandardCharsets.UTF_8)
     )
