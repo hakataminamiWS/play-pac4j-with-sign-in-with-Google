@@ -50,7 +50,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
 
     // callback
     val callbackController = new CallbackController()
-    callbackController.setDefaultUrl("/") // default url after sign out
+    // callbackController.setDefaultUrl("/") // default url after sign out
     bind(classOf[CallbackController]).toInstance(callbackController)
 
     // logout

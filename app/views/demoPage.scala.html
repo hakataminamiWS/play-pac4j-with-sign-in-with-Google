@@ -1,8 +1,8 @@
 @import org.pac4j.oidc.profile.OidcProfile
 @(profile: Option[org.pac4j.oidc.profile.OidcProfile])(implicit request: play.api.mvc.Request[Any])
 
-@main("Welcome") {
-<h1>Welcome!!</h1>
+@main("Demo Page") {
+<h1>Demo Page</h1>
 
 @profile match {
 case Some(pf) => {

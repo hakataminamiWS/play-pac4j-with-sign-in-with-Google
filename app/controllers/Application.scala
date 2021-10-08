@@ -4,10 +4,17 @@ import javax.inject.Inject
 
 import scala.jdk.OptionConverters._
 
+import org.pac4j.core.client.IndirectClient
+
+import org.pac4j.core.credentials.Credentials
+
+import org.pac4j.core.exception.http.WithLocationAction
+
 import org.pac4j.core.profile.CommonProfile
 import org.pac4j.core.profile.ProfileManager
 import org.pac4j.core.profile.UserProfile
-import org.pac4j.core.client.IndirectClient
+
+import org.pac4j.core.util.Pac4jConstants
 
 import org.pac4j.play.PlayWebContext
 
@@ -17,9 +24,6 @@ import org.pac4j.play.scala.Security
 import org.pac4j.oidc.profile.OidcProfile
 
 import play.api.mvc.RequestHeader
-// import play.api.mvc.ActionFilter
-// import play.api.mvc.Request
-// import play.api.mvc.Result
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -51,4 +55,51 @@ class Application @Inject() (
     Secure(clients = "LineOidcClient") { implicit request =>
       Ok(views.html.index(getProfile(request)))
     }
+
+  def enforceSignInWithGoogle = {
+    enforceSignIn(_: Option[String])(oidcClient = "GoogleOidcClient")
+  }
+
+  def enforceSignInWithLine = {
+    enforceSignIn(_: Option[String])(oidcClient = "LineOidcClient")
+  }
+
+  def enforceSignIn(optQueryRequestURL: Option[String])(oidcClient: String) =
+    Action { implicit request =>
+      val context = new PlayWebContext(request)
+
+      val scheme = if (request.connection.secure) "https" else "http"
+      // set request URL for callback
+      optQueryRequestURL.map(requestURL =>
+        controllerComponents.sessionStore.set(
+          context,
+          Pac4jConstants.REQUESTED_URL,
+          scheme + "://" + request.host + requestURL
+        )
+      )
+
+      // enforce sign in
+      val client = config.getClients
+        .findClient(oidcClient)
+        .get()
+        .asInstanceOf[IndirectClient]
+      val location = client
+        .getRedirectionAction(context, sessionStore)
+        .get
+        .asInstanceOf[WithLocationAction]
+        .getLocation
+
+      context.supplementResponse(Redirect(location))
+    }
+
+  def demoPage = Action { implicit request =>
+    val context = new PlayWebContext(request)
+    controllerComponents.sessionStore.set(
+      context,
+      Pac4jConstants.REQUESTED_URL,
+      context.getFullRequestURL()
+    )
+
+    Ok(views.html.demoPage(getProfile(request)))
+  }
 }
