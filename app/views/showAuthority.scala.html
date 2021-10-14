@@ -1,8 +1,8 @@
 @import org.pac4j.oidc.profile.OidcProfile
 @(profile: Option[org.pac4j.oidc.profile.OidcProfile])(implicit request: play.api.mvc.Request[Any])
 
-@main("Demo Page") {
-<h1>Demo Page</h1>
+@main("Show Authority") {
+<h1>Show Authority</h1>
 
 @profile match {
 case Some(pf) => {
@@ -10,13 +10,7 @@ case Some(pf) => {
   profile.toString(): @pf.toString()
 </p>
 <p>
-  TypedId: @pf.getTypedId()
-</p>
-<p>
-  Name: @pf.getDisplayName()
-</p>
-<p>
-  Picture: <img src='@pf.getPictureUrl()' />
+  Permissions: @pf.getPermissions().toString()
 </p>
 <div>
   <a href="/sign-out">Sign out</a>

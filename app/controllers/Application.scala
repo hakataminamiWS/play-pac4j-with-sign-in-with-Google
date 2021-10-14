@@ -1,32 +1,23 @@
 package controllers
 
 import javax.inject.Inject
-
-import scala.jdk.OptionConverters._
-
+import org.pac4j.core.authorization.authorizer.RequireAnyPermissionAuthorizer
 import org.pac4j.core.client.IndirectClient
-
 import org.pac4j.core.credentials.Credentials
-
 import org.pac4j.core.exception.http.WithLocationAction
-
 import org.pac4j.core.profile.CommonProfile
 import org.pac4j.core.profile.ProfileManager
 import org.pac4j.core.profile.UserProfile
-
 import org.pac4j.core.util.Pac4jConstants
-
-import org.pac4j.play.PlayWebContext
-
-import org.pac4j.play.scala.SecurityComponents
-import org.pac4j.play.scala.Security
-
 import org.pac4j.oidc.profile.OidcProfile
-
+import org.pac4j.play.PlayWebContext
+import org.pac4j.play.scala.Security
+import org.pac4j.play.scala.SecurityComponents
 import play.api.mvc.RequestHeader
-
-import scala.concurrent.Future
+import play.api.mvc.Result
 import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.jdk.OptionConverters._
 
 class Application @Inject() (
     val controllerComponents: SecurityComponents
@@ -35,9 +26,9 @@ class Application @Inject() (
   private def getProfile(implicit
       request: RequestHeader
   ): Option[OidcProfile] = {
-    val webContext = new PlayWebContext(request)
+    val context = new PlayWebContext(request)
     val profileManager =
-      new ProfileManager(webContext, controllerComponents.sessionStore)
+      new ProfileManager(context, sessionStore)
     val profile = profileManager.getProfile(classOf[OidcProfile])
     profile.toScala
   }
@@ -92,14 +83,53 @@ class Application @Inject() (
       context.supplementResponse(Redirect(location))
     }
 
-  def demoPage = Action { implicit request =>
-    val context = new PlayWebContext(request)
-    controllerComponents.sessionStore.set(
-      context,
-      Pac4jConstants.REQUESTED_URL,
-      context.getFullRequestURL()
-    )
+  def SignInWithGoogleAddAuthority =
+    Secure(
+      clients = "GoogleOidcClientWithAuthority",
+      authorizers = "test"
+    ) { implicit request =>
+      Ok(views.html.showAuthority(getProfile(request)))
+    }
 
+  def demoPage = Action { implicit request =>
     Ok(views.html.demoPage(getProfile(request)))
   }
+
+  def showAuthority = Action { implicit request =>
+    Ok(views.html.showAuthority(getProfile(request)))
+  }
+
+  def checkAuthority = {
+    val testAuthorizer = new RequireAnyPermissionAuthorizer("test")
+    config.addAuthorizer("testAuthorizer", testAuthorizer)
+    Secure(clients = null, authorizers = "testAuthorizer") { implicit request =>
+      Ok(views.html.checkAuthority(getProfile(request)))
+    }
+  }
+
+  def addAuthorityForSignInUser =
+    Secure { implicit request =>
+      val context = new PlayWebContext(request)
+      val profileManager =
+        new ProfileManager(context, sessionStore)
+
+      val optProfile = getProfile(request)
+        .map { profile =>
+          profile.addPermission("test")
+          profile
+        }
+        .map { profile =>
+          profileManager.save(
+            true, // saveInSession
+            profile,
+            true // multiProfile
+          )
+          profile
+        }
+
+      context.supplementResponse(
+        Ok(views.html.addAuthorityForSignInUser(optProfile))
+      )
+    }
+
 }

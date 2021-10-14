@@ -4,16 +4,21 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /                            controllers.Application.index
-GET     /sign-in-with-google         controllers.Application.googleOidcIndex
-GET     /sign-in-with-line           controllers.Application.lineOidcIndex
+GET     /                                            controllers.Application.index
+GET     /sign-in-with-google                         controllers.Application.googleOidcIndex
+GET     /sign-in-with-line                           controllers.Application.lineOidcIndex
 
-GET     /demo                        controllers.Application.demoPage
-GET     /enforce-sign-in-with-google controllers.Application.enforceSignInWithGoogle(requesturl: Option[String])
-GET     /enforce-sign-in-with-line   controllers.Application.enforceSignInWithLine(requesturl: Option[String])
+GET     /demo                                        controllers.Application.demoPage
+GET     /enforce-sign-in-with-google                 controllers.Application.enforceSignInWithGoogle(requesturl: Option[String])
+GET     /enforce-sign-in-with-line                   controllers.Application.enforceSignInWithLine(requesturl: Option[String])
 
-GET     /sign-out                   @org.pac4j.play.LogoutController.logout(request: Request)
-GET     /callback                   @org.pac4j.play.CallbackController.callback(request: Request)
+GET     /sign-in-with-google-add-authority           controllers.Application.SignInWithGoogleAddAuthority
+GET     /add-authority-for-sign-in-user              controllers.Application.addAuthorityForSignInUser
+GET     /show-authority                              controllers.Application.showAuthority
+GET     /check-authority                             controllers.Application.checkAuthority
+
+GET     /sign-out                                   @org.pac4j.play.LogoutController.logout(request: Request)
+GET     /callback                                   @org.pac4j.play.CallbackController.callback(request: Request)
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file                controllers.Assets.versioned(path="/public", file: Asset)
+GET     /assets/*file                                controllers.Assets.versioned(path="/public", file: Asset)

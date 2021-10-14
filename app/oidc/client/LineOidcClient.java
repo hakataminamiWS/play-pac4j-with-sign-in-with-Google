@@ -1,16 +1,12 @@
 package oidc.client;
 
-import org.pac4j.oidc.config.OidcConfiguration;
-
-import org.pac4j.oidc.client.OidcClient;
-
-import org.pac4j.oidc.profile.OidcProfileDefinition;
-import org.pac4j.oidc.profile.OidcProfile;
-import org.pac4j.oidc.profile.creator.OidcProfileCreator;
-
 import com.nimbusds.jose.JWSAlgorithm;
-
 import oidc.profile.LineOidcProfile;
+import org.pac4j.oidc.client.OidcClient;
+import org.pac4j.oidc.config.OidcConfiguration;
+import org.pac4j.oidc.profile.creator.OidcProfileCreator;
+import org.pac4j.oidc.profile.OidcProfile;
+import org.pac4j.oidc.profile.OidcProfileDefinition;
 
 /**
  * <p>This class is the OpenID Connect client to authenticate users in Line.</p>
