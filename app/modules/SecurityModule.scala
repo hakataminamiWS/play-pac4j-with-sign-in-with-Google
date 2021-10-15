@@ -26,6 +26,7 @@ import org.pac4j.play.store.ShiroAesDataEncrypter
 import play.api.{Configuration, Environment}
 import store.ModPlayCookieSessionStore
 
+
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
