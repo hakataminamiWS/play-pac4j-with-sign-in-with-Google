@@ -6,16 +6,16 @@
 # An example controller showing a sample home page
 GET     /                                            controllers.Application.index
 GET     /sign-in-with-google                         controllers.Application.googleOidcIndex
+GET     /sign-in-with-google-auth                    controllers.Application.googleOidcIndexWithAuthorizer
 GET     /sign-in-with-line                           controllers.Application.lineOidcIndex
+GET     /sign-in-with-line-auth                      controllers.Application.lineOidcIndexWithAuthorizer
 
 GET     /demo                                        controllers.Application.demoPage
 GET     /enforce-sign-in-with-google                 controllers.Application.enforceSignInWithGoogle(requesturl: Option[String])
 GET     /enforce-sign-in-with-line                   controllers.Application.enforceSignInWithLine(requesturl: Option[String])
 
-GET     /sign-in-with-google-add-authority           controllers.Application.SignInWithGoogleAddAuthority
-GET     /add-authority-for-sign-in-user              controllers.Application.addAuthorityForSignInUser
-GET     /show-authority                              controllers.Application.showAuthority
-GET     /check-authority                             controllers.Application.checkAuthority
+GET     /add-cache                                   controllers.Application.addCache
+GET     /remove-cache                                controllers.Application.removeCache
 
 GET     /sign-out                                   @org.pac4j.play.LogoutController.logout(request: Request)
 GET     /callback                                   @org.pac4j.play.CallbackController.callback(request: Request)

@@ -16,3 +16,4 @@ project/.bloop
 .scalafmt.conf
 .bloop
 conf/pac4j.secret.conf
+conf/application.secret.conf

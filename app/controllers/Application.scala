@@ -1,27 +1,37 @@
 package controllers
 
+import authorization._
+import authorization.authorizer.RequireAnyNewerRole
+import authorization.repository.AuthorityRepository
 import javax.inject.Inject
-import org.pac4j.core.authorization.authorizer.RequireAnyPermissionAuthorizer
+import oidc.profile.OidcProfile
+import org.pac4j.core.authorization.authorizer.Authorizer
 import org.pac4j.core.client.IndirectClient
-import org.pac4j.core.credentials.Credentials
+import org.pac4j.core.config.Config
 import org.pac4j.core.exception.http.WithLocationAction
 import org.pac4j.core.profile.CommonProfile
 import org.pac4j.core.profile.ProfileManager
-import org.pac4j.core.profile.UserProfile
 import org.pac4j.core.util.Pac4jConstants
-import org.pac4j.oidc.profile.OidcProfile
 import org.pac4j.play.PlayWebContext
 import org.pac4j.play.scala.Security
 import org.pac4j.play.scala.SecurityComponents
+import play.api.cache.AsyncCacheApi
+import play.api.Logger
+import play.api.Logging
 import play.api.mvc.RequestHeader
-import play.api.mvc.Result
-import scala.concurrent.duration._
-import scala.concurrent.Future
 import scala.jdk.OptionConverters._
+import scala.util.Failure
+import scala.util.Success
 
 class Application @Inject() (
-    val controllerComponents: SecurityComponents
-) extends Security[CommonProfile] {
+    val controllerComponents: SecurityComponents,
+    val repo: AuthorityRepository,
+    val cache: AsyncCacheApi,
+    val dataSet: DataSetForDemo
+) extends Security[CommonProfile]
+    with Logging {
+
+  implicit val ec = controllerComponents.executionContext
 
   private def getProfile(implicit
       request: RequestHeader
@@ -41,11 +51,33 @@ class Application @Inject() (
     Secure(clients = "GoogleOidcClient") { implicit request =>
       Ok(views.html.index(getProfile(request)))
     }
+  def googleOidcIndexWithAuthorizer = {
+    val authorizerName = dataSet.authorizerName
+    val allowedMap =
+      repo.getTypedIdRoleAndUpdateAtMap(dataSet.resourceIdName)
+    config.addAuthorizer(authorizerName, new RequireAnyNewerRole(allowedMap))
+
+    Secure(clients = "GoogleOidcClient", authorizers = authorizerName) {
+      implicit request =>
+        Ok(views.html.index(getProfile(request)))
+    }
+  }
 
   def lineOidcIndex =
     Secure(clients = "LineOidcClient") { implicit request =>
       Ok(views.html.index(getProfile(request)))
     }
+  def lineOidcIndexWithAuthorizer = {
+    val authorizerName = dataSet.authorizerName
+    val allowedMap =
+      repo.getTypedIdRoleAndUpdateAtMap(dataSet.resourceIdName)
+    config.addAuthorizer(authorizerName, new RequireAnyNewerRole(allowedMap))
+
+    Secure(clients = "LineOidcClient", authorizers = authorizerName) {
+      implicit request =>
+        Ok(views.html.index(getProfile(request)))
+    }
+  }
 
   def enforceSignInWithGoogle = {
     enforceSignIn(_: Option[String])(oidcClient = "GoogleOidcClient")
@@ -83,53 +115,88 @@ class Application @Inject() (
       context.supplementResponse(Redirect(location))
     }
 
-  def SignInWithGoogleAddAuthority =
-    Secure(
-      clients = "GoogleOidcClientWithAuthority",
-      authorizers = "test"
-    ) { implicit request =>
-      Ok(views.html.showAuthority(getProfile(request)))
+  private def showAllCache: Unit = {
+    val loggerName = this.getClass().toString + "#showCache"
+    val logger = Logger(loggerName)
+
+    val cacheKey = dataSet.resourceIdName
+    cache.get[TypedIdRoleAndUpdateAtMap](cacheKey).onComplete {
+      case Failure(exception) => {
+        logger.warn(s"exception occur: ${exception.toString()}")
+      }
+      case Success(opt) => {
+        opt match {
+          case Some(typedMap) =>
+            logger.info(s"cached TypedIdRoleAndUpdateAtMap: ${typedMap}")
+          case None => logger.info("No cache")
+        }
+      }
     }
+  }
 
   def demoPage = Action { implicit request =>
+    showAllCache
     Ok(views.html.demoPage(getProfile(request)))
   }
 
-  def showAuthority = Action { implicit request =>
-    Ok(views.html.showAuthority(getProfile(request)))
+  def addCache = Action { implicit request =>
+    val cacheKey = dataSet.resourceIdName
+    cache.set(
+      cacheKey,
+      dataSet.allowedMap
+    )
+    showAllCache
+    Ok(views.html.demoPage(getProfile(request)))
   }
 
-  def checkAuthority = {
-    val testAuthorizer = new RequireAnyPermissionAuthorizer("test")
-    config.addAuthorizer("testAuthorizer", testAuthorizer)
-    Secure(clients = null, authorizers = "testAuthorizer") { implicit request =>
-      Ok(views.html.checkAuthority(getProfile(request)))
-    }
+  def removeCache = Action { implicit request =>
+    cache.removeAll()
+    showAllCache
+    Ok(views.html.demoPage(getProfile(request)))
   }
+}
 
-  def addAuthorityForSignInUser =
-    Secure { implicit request =>
-      val context = new PlayWebContext(request)
-      val profileManager =
-        new ProfileManager(context, sessionStore)
+import play.api.Configuration
+class DataSetForDemo @Inject() (configuration: Configuration) extends Logging {
+  import authorization.roles.Owner
+  import authorization.roles.RoleAndUpdateAt
+  import authorization.roles.Contributor
 
-      val optProfile = getProfile(request)
-        .map { profile =>
-          profile.addPermission("test")
-          profile
-        }
-        .map { profile =>
-          profileManager.save(
-            true, // saveInSession
-            profile,
-            true // multiProfile
-          )
-          profile
-        }
+  val authorizerName = "authorizer"
+  val resourceIdName = "resourceId"
 
-      context.supplementResponse(
-        Ok(views.html.addAuthorityForSignInUser(optProfile))
-      )
+  val olderParseableString = "2000-01-01T01:02:03.456789Z"
+  val newerParseableString = "2111-01-01T01:02:03.456789Z"
+
+  val javaTimeInstant = java.time.Instant.parse(olderParseableString)
+  // val javaTimeInstant = java.time.Instant.parse(newerParseableString)
+
+  val typedIdGoogle =
+    configuration.getOptional[String](
+      "dataset.secret.demo.typedId.google"
+    ) match {
+      case Some(str) => str
+      case None => {
+        val value = "typedIdGoogle"
+        logger.warn(s"${value} not found in application.conf")
+        value
+      }
+    }
+  val typedIdLine =
+    configuration.getOptional[String](
+      "dataset.secret.demo.typedId.line"
+    ) match {
+      case Some(str) => str
+      case None => {
+        val value = "typedIdLine"
+        logger.warn(s"${value} not found in application.conf")
+        value
+      }
     }
 
+  val allowedMap: TypedIdRoleAndUpdateAtMap =
+    Map(
+      typedIdGoogle -> RoleAndUpdateAt(Owner, javaTimeInstant),
+      typedIdLine -> RoleAndUpdateAt(Contributor, javaTimeInstant)
+    )
 }

@@ -1,31 +1,32 @@
 package modules
 
-import com.google.inject.{AbstractModule, Provides}
+import authorization.authorizer.RequireAnyNewerRole
+import authorization.repository._
+import com.google.inject.AbstractModule
+import com.google.inject.Provides
 import com.nimbusds.jose.JWSAlgorithm
 import java.nio.charset.StandardCharsets
-import oidc.client.GoogleOidcClientWithAuthority
+import oidc.client.GoogleOidcClient
 import oidc.client.LineOidcClient
 import oidc.config.LineOidcConfiguration
-import org.pac4j.core.authorization.authorizer.RequireAnyPermissionAuthorizer
-import org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer
 import org.pac4j.core.authorization.generator.DefaultRolesPermissionsAuthorizationGenerator
 import org.pac4j.core.client.Clients
 import org.pac4j.core.config.Config
 import org.pac4j.core.context.session.SessionStore
-import org.pac4j.oidc.client.GoogleOidcClient
-import org.pac4j.oidc.client.OidcClient
 import org.pac4j.oidc.config.OidcConfiguration
 import org.pac4j.play.CallbackController
 import org.pac4j.play.http.PlayHttpActionAdapter
 import org.pac4j.play.LogoutController
 import org.pac4j.play.scala.DefaultSecurityComponents
 import org.pac4j.play.scala.SecurityComponents
-import org.pac4j.play.store.PlayCacheSessionStore
-import org.pac4j.play.store.PlayCookieSessionStore
+import org.pac4j.play.store.{
+  PlayCookieSessionStore => pac4jPlayCookieSessionStore
+}
 import org.pac4j.play.store.ShiroAesDataEncrypter
-import play.api.{Configuration, Environment}
-import store.ModPlayCookieSessionStore
-
+import play.api.Configuration
+import play.api.Environment
+import scala.jdk.CollectionConverters._
+import store.PlayCookieSessionStore
 
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
@@ -33,9 +34,14 @@ class SecurityModule(environment: Environment, configuration: Configuration)
   val baseUrl: String = configuration.get[String]("pac4j.baseUrl")
 
   override def configure(): Unit = {
+
     // for serialize custom profile
-    PlayCookieSessionStore.JAVA_SERIALIZER.addTrustedClass(
-      classOf[oidc.profile.LineOidcProfile]
+    val trustedClassSet: Set[Class[_]] = Set(
+      classOf[oidc.profile.LineOidcProfile],
+      classOf[oidc.profile.GoogleOidcProfile]
+    )
+    pac4jPlayCookieSessionStore.JAVA_SERIALIZER.addTrustedClasses(
+      trustedClassSet.asJava
     )
 
     // sessionStore, SecurityComponents
@@ -45,8 +51,8 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     val dataEncrypter = new ShiroAesDataEncrypter(
       sKey.getBytes(StandardCharsets.UTF_8)
     )
-    val modPlaySessionStore = new ModPlayCookieSessionStore(dataEncrypter)
-    bind(classOf[SessionStore]).toInstance(modPlaySessionStore)
+    val playSessionStore = new PlayCookieSessionStore(dataEncrypter)
+    bind(classOf[SessionStore]).toInstance(playSessionStore)
 
     bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
 
@@ -66,20 +72,6 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     val googleOidcClient = new GoogleOidcClient(googleOidcConfigSetup)
     googleOidcClient.setMultiProfile(true)
     googleOidcClient
-  }
-  @Provides
-  def provideGoogleOidcClientWithAuthority: GoogleOidcClientWithAuthority = {
-    val googleOidcClientWithAuthority = new GoogleOidcClientWithAuthority(
-      googleOidcConfigSetup
-    )
-    googleOidcClientWithAuthority.setMultiProfile(true)
-    googleOidcClientWithAuthority.addAuthorizationGenerator(
-      new DefaultRolesPermissionsAuthorizationGenerator(
-        Array.empty[String], // defaultRoles
-        Array("test") // defaultPermissions
-      )
-    )
-    googleOidcClientWithAuthority
   }
   private def googleOidcConfigSetup: OidcConfiguration = {
     val oidcConfig = new OidcConfiguration()
@@ -127,19 +119,27 @@ class SecurityModule(environment: Environment, configuration: Configuration)
   def provideConfig(
       googleOidcClient: GoogleOidcClient,
       lineOidcClient: LineOidcClient,
-      googleOidcClientWithAuthority: GoogleOidcClientWithAuthority
+      authorityRepository: AuthorityRepositoryWithCache
   ): Config = {
     val clients =
       new Clients(
         baseUrl + "/callback",
         googleOidcClient,
-        lineOidcClient,
-        googleOidcClientWithAuthority
+        lineOidcClient
       )
 
     val config = new Config(clients)
     config.setHttpActionAdapter(new PlayHttpActionAdapter())
-    config.addAuthorizer("test", new RequireAnyPermissionAuthorizer("test"))
+    config.addAuthorizer(
+      "test",
+      // new TestRequireAnyNewerRole(
+      new RequireAnyNewerRole(
+        // "test",
+        // repositoryTest.Atest
+        authorityRepository.getTypedIdRoleAndUpdateAtMap("test")
+        // AuthorityRepositoryImp.getTypedIdRoleAndUpdateAtMap("test")
+      )
+    )
     config
   }
 }

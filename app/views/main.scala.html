@@ -38,19 +38,18 @@
     <div>
         <a href="/enforce-sign-in-with-line?requesturl=@request.uri">Enforce Sign in with LINE</a>
     </div>
-    <h2>Authorization</h2>
+    <h2>Cache Authorization</h2>
     <div>
-        <a href="/sign-in-with-google-add-authority">Sign in with Google and add Authority (show 401, if a user already
-            sign in and has no authority)</a>
+        <a href="/sign-in-with-google-auth">Sign in with Google and Check Authority</a>
     </div>
     <div>
-        <a href="/add-authority-for-sign-in-user">Add Authority for Sign in User</a>
+        <a href="/sign-in-with-line-auth">Sign in with Line and Check Authority</a>
     </div>
     <div>
-        <a href="/show-authority">Show Authority</a>
+        <a href="/add-cache">Add an authority data in Cache</a>
     </div>
     <div>
-        <a href="/check-authority">Check Authority</a>
+        <a href="/remove-cache">Remove an Authority data in Cache</a>
     </div>
 
     <script src='@routes.Assets.versioned("javascripts/main.js")' type="text/javascript"></script>

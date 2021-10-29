@@ -8,7 +8,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 scalaVersion := "2.13.6"
 
 libraryDependencies += guice
-// libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % Test
 
 // for play-pac4j
 val playPac4jVersion = "11.0.0-PLAY2.8"
@@ -21,6 +21,9 @@ dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-databind" % "2.11
 
 // for akka serializer
 libraryDependencies += "io.altoo" %% "akka-kryo-serialization" % "2.2.0"
+
+// for cache
+libraryDependencies += caffeine
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.example.controllers._"
