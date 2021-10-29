@@ -23,7 +23,7 @@ class RequireAnyNewerRoleSpec extends PlaySpec {
 
   "RequireAnyNewerRole" should {
     "return false, profile's TypedId is Not included in allowedTypeIdRoleAndUpdateMap's key" in {
-      val notIncludedAllowedMap: TypedIdRoleAndUpdateAtMap =
+      val notIncludedAllowedMap =
         Map(
           testTypedId + "not included" -> RoleAndUpdateAt(
             Owner,
@@ -43,14 +43,14 @@ class RequireAnyNewerRoleSpec extends PlaySpec {
 
     "return false, profile's TypedId is included in allowedTypeIdRoleAndUpdateMap's key" +
       " but profiles's iat is older than (or equal to ) the allowedTypeIdRoleAndUpdateMap's value" in {
-        val newerThanUpdateAtOfProfileAllowedMap: TypedIdRoleAndUpdateAtMap =
+        val newerThanUpdateAtOfProfileAllowedMap =
           Map(
             testTypedId -> RoleAndUpdateAt(
               Owner,
               newerJavaTimeInstant plusSeconds (1L)
             )
           )
-        val equalToUpdateAtOfProfileAllowedMap: TypedIdRoleAndUpdateAtMap =
+        val equalToUpdateAtOfProfileAllowedMap =
           Map(
             testTypedId -> RoleAndUpdateAt(
               Owner,

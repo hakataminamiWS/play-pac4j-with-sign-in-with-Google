@@ -2,8 +2,7 @@ package authorization.authorizer
 
 import authorization.roles.Role
 import authorization.roles.RoleAndUpdateAt
-import authorization.TypedId
-import authorization.TypedIdRoleAndUpdateAtMap
+import authorization._
 import oidc.profile.OidcProfile
 import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
 import org.pac4j.core.context.session.SessionStore
@@ -60,14 +59,13 @@ object RequireAnyNewerRole extends {
 
   // factory method filtering allowedMap: (key, roleAndUpdate) -> roleAndUpdate include roleObject
   def Of(roleObject: Role)(
-      allowedTypeIdRoleAndUpdateMap: TypedIdRoleAndUpdateAtMap
+      allowedTypeIdRoleAndUpdateMap: => TypedIdRoleAndUpdateAtMap
   ): RequireAnyNewerRole = {
-    val filteredAllowedMap =
+    new RequireAnyNewerRole(
       allowedTypeIdRoleAndUpdateMap.filter {
         case (_, RoleAndUpdateAt(role, _)) =>
           role equals roleObject
       }
-
-    new RequireAnyNewerRole(filteredAllowedMap)
+    )
   }
 }

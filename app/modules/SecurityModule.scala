@@ -70,7 +70,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
   @Provides
   def provideGoogleOidcClient: GoogleOidcClient = {
     val googleOidcClient = new GoogleOidcClient(googleOidcConfigSetup)
-    googleOidcClient.setMultiProfile(true)
+    googleOidcClient.setMultiProfile(false)
     googleOidcClient
   }
   private def googleOidcConfigSetup: OidcConfiguration = {
@@ -92,7 +92,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
   @Provides
   def provideLineOidcClient: LineOidcClient = {
     val lineOidcClient = new LineOidcClient(lineOidcConfigSetup)
-    lineOidcClient.setMultiProfile(true)
+    lineOidcClient.setMultiProfile(false)
     lineOidcClient
   }
   private def lineOidcConfigSetup: LineOidcConfiguration = {
@@ -130,16 +130,6 @@ class SecurityModule(environment: Environment, configuration: Configuration)
 
     val config = new Config(clients)
     config.setHttpActionAdapter(new PlayHttpActionAdapter())
-    config.addAuthorizer(
-      "test",
-      // new TestRequireAnyNewerRole(
-      new RequireAnyNewerRole(
-        // "test",
-        // repositoryTest.Atest
-        authorityRepository.getTypedIdRoleAndUpdateAtMap("test")
-        // AuthorityRepositoryImp.getTypedIdRoleAndUpdateAtMap("test")
-      )
-    )
     config
   }
 }

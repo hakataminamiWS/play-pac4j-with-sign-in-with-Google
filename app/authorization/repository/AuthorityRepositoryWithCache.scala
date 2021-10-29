@@ -12,14 +12,13 @@ class AuthorityRepositoryWithCache @Inject() (cache: AsyncCacheApi)
     with Logging {
   implicit val ec = scala.concurrent.ExecutionContext.global
 
-  val cacheKey = "test"
-  override def getTypedIdRoleAndUpdateAtMap(
-      resourceId: ResourceId
-  ): TypedIdRoleAndUpdateAtMap = {
-    val f = cache
-      .get[TypedIdRoleAndUpdateAtMap](resourceId)
+  override def getTypedIdRoleAndUpdateAtMap
+      : ResourceId => TypedIdRoleAndUpdateAtMap =
+    (resourceId: ResourceId) => {
+      val cacheKey = resourceId
+      val f = cache
+        .get[TypedIdRoleAndUpdateAtMap](cacheKey)
+      Await.result(f, 5.seconds).getOrElse(Map.empty)
+    }
 
-    logger.info("read cache")
-    Await.result(f, 5.seconds).getOrElse(Map.empty)
-  }
 }
