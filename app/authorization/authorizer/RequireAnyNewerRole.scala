@@ -57,6 +57,12 @@ object RequireAnyNewerRole extends {
     }
   }
 
+  def apply(
+      allowedTypeIdRoleAndUpdateMap: => TypedIdRoleAndUpdateAtMap
+  ): RequireAnyNewerRole = {
+    new RequireAnyNewerRole(allowedTypeIdRoleAndUpdateMap)
+  }
+
   // factory method filtering allowedMap: (key, roleAndUpdate) -> roleAndUpdate include roleObject
   def Of(roleObject: Role)(
       allowedTypeIdRoleAndUpdateMap: => TypedIdRoleAndUpdateAtMap

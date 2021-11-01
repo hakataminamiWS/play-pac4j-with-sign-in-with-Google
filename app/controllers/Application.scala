@@ -3,7 +3,9 @@ package controllers
 import authorization._
 import authorization.authorizer.RequireAnyNewerRole
 import authorization.repository.AuthorityRepository
+import authorization.roles.Owner
 import javax.inject.Inject
+import javax.inject.Named
 import oidc.profile.OidcProfile
 import org.pac4j.core.authorization.authorizer.Authorizer
 import org.pac4j.core.client.IndirectClient
@@ -22,14 +24,12 @@ import play.api.mvc.RequestHeader
 import scala.jdk.OptionConverters._
 import scala.util.Failure
 import scala.util.Success
-import authorization.repository.AuthorityRepositoryWithCache
-import authorization.roles.Owner
 
 class Application @Inject() (
     val controllerComponents: SecurityComponents,
-    val repo: AuthorityRepositoryWithCache,
-    val cache: AsyncCacheApi,
-    val dataSet: DataSetForDemo
+    @Named("repoCache") repo: AuthorityRepository,
+    cache: AsyncCacheApi,
+    dataSet: DataSetForDemo
 ) extends Security[CommonProfile]
     with Logging {
 
@@ -65,14 +65,18 @@ class Application @Inject() (
     }
   def googleOidcIndexWithAuthorizer = {
     val authorizerName = dataSet.ownerAuthorizerName
-    val allowedMapReadFunc: Function1[ResourceId, TypedIdRoleAndUpdateAtMap] =
-      repo.getTypedIdRoleAndUpdateAtMap
-    putIfAbsentAuthorizer(
-      config,
-      authorizerName,
-      RequireAnyNewerRole.Of(Owner)(allowedMapReadFunc(dataSet.resourceIdName))
-    )
+    val f = repo.getTypedIdRoleAndUpdateAtMap(dataSet.resourceIdName)
+    f.foreach { typedMap =>
+      val allowedMapReadFunc: Function1[ResourceId, TypedIdRoleAndUpdateAtMap] =
+        (resourceId: ResourceId) => typedMap
 
+      config.addAuthorizer(
+        authorizerName,
+        RequireAnyNewerRole.Of(Owner)(
+          allowedMapReadFunc(dataSet.resourceIdName)
+        )
+      )
+    }
     Secure(clients = "GoogleOidcClient", authorizers = authorizerName) {
       implicit request =>
         Ok(views.html.index(getProfile(request)))
@@ -85,13 +89,18 @@ class Application @Inject() (
     }
   def lineOidcIndexWithAuthorizer = {
     val authorizerName = dataSet.anyAuthorizerName
-    val allowedMapReadFunc: Function1[ResourceId, TypedIdRoleAndUpdateAtMap] =
-      repo.getTypedIdRoleAndUpdateAtMap
-    putIfAbsentAuthorizer(
-      config,
-      authorizerName,
-      new RequireAnyNewerRole(allowedMapReadFunc(dataSet.resourceIdName))
-    )
+    val f = repo.getTypedIdRoleAndUpdateAtMap(dataSet.resourceIdName)
+    f.foreach { typedMap =>
+      val allowedMapReadFunc: Function1[ResourceId, TypedIdRoleAndUpdateAtMap] =
+        (resourceId: ResourceId) => typedMap
+
+      config.addAuthorizer(
+        authorizerName,
+        RequireAnyNewerRole(
+          allowedMapReadFunc(dataSet.resourceIdName)
+        )
+      )
+    }
 
     Secure(clients = "LineOidcClient", authorizers = authorizerName) {
       implicit request =>
