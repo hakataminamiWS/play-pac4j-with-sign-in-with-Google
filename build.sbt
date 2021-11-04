@@ -26,7 +26,7 @@ libraryDependencies += "io.altoo" %% "akka-kryo-serialization" % "2.2.0"
 libraryDependencies += caffeine
 
 // https://mvnrepository.com/artifact/org.typelevel/cats-core
-libraryDependencies += "org.typelevel" %% "cats-core" % "2.6.1"
+// libraryDependencies += "org.typelevel" %% "cats-core" % "2.6.1"
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.example.controllers._"
