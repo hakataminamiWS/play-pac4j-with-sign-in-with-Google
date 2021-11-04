@@ -1,20 +1,27 @@
 package authorization.authorizer
 
+import authorization._
+import authorization.repository.AwaitError
+import authorization.repository.Error
 import authorization.roles.Role
 import authorization.roles.RoleAndUpdateAt
-import authorization._
 import oidc.profile.OidcProfile
 import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
 import org.pac4j.core.context.session.SessionStore
 import org.pac4j.core.context.WebContext
 import org.pac4j.core.profile.UserProfile
 import play.api.Logging
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.control.NonFatal
 
-class RequireAnyNewerRole(
-    allowedTypeIdRoleAndUpdateMap: => TypedIdRoleAndUpdateAtMap
+case class RequireAnyNewerRole(
+    keyForGetMap: ResourceId,
+    getMapFunc: (ResourceId) => Future[Either[Error, TypedIdRoleAndUpdateAtMap]]
 ) extends ProfileAuthorizer
     with Logging {
-
   override def isAuthorized(
       webContext: WebContext,
       sessionStore: SessionStore,
@@ -32,7 +39,7 @@ class RequireAnyNewerRole(
       case true =>
         RequireAnyNewerRole.isProfileSignInAfterUpdate(
           profile.asInstanceOf[OidcProfile],
-          allowedTypeIdRoleAndUpdateMap
+          getMapFunc(keyForGetMap)
         )
 
       case false => {
@@ -43,35 +50,53 @@ class RequireAnyNewerRole(
   }
 }
 
-object RequireAnyNewerRole extends {
+object RequireAnyNewerRole extends Logging {
   private def isProfileSignInAfterUpdate(
       profile: OidcProfile,
-      allowedMap: TypedIdRoleAndUpdateAtMap
+      allowedMap: Future[Either[Error, TypedIdRoleAndUpdateAtMap]]
   ): Boolean = {
     val profileSignInDate = profile.getIssueAtAsInstant()
-
     val profileId: TypedId = profile.getTypedId()
-    allowedMap.get(profileId) match {
-      case Some(roleAndUpdateAt) => roleAndUpdateAt.isOlder(profileSignInDate)
-      case None                  => false
-    }
-  }
+    val r =
+      try { Await.result(allowedMap, 3.seconds) }
+      catch { case NonFatal(e) => Left(AwaitError(e)) }
 
-  def apply(
-      allowedTypeIdRoleAndUpdateMap: => TypedIdRoleAndUpdateAtMap
-  ): RequireAnyNewerRole = {
-    new RequireAnyNewerRole(allowedTypeIdRoleAndUpdateMap)
+    r match {
+      case Right(map) => {
+        map.get(profileId) match {
+          case Some(roleAndUpdateAt) =>
+            roleAndUpdateAt.isOlder(profileSignInDate)
+          case None => false
+        }
+      }
+      case Left(error) => {
+        logger.info(s"error occur ${error}")
+        false
+      }
+    }
   }
 
   // factory method filtering allowedMap: (key, roleAndUpdate) -> roleAndUpdate include roleObject
   def Of(roleObject: Role)(
-      allowedTypeIdRoleAndUpdateMap: => TypedIdRoleAndUpdateAtMap
-  ): RequireAnyNewerRole = {
-    new RequireAnyNewerRole(
-      allowedTypeIdRoleAndUpdateMap.filter {
-        case (_, RoleAndUpdateAt(role, _)) =>
-          role equals roleObject
-      }
+      keyForGetMap: ResourceId,
+      getMapFunc: (
+          ResourceId
+      ) => Future[Either[Error, TypedIdRoleAndUpdateAtMap]]
+  )(implicit ec: ExecutionContext): RequireAnyNewerRole = {
+
+    RequireAnyNewerRole(
+      keyForGetMap,
+      (ResourceId) =>
+        getMapFunc(keyForGetMap)
+          .map(
+            _.map(
+              _.filter {
+                case (_, RoleAndUpdateAt(role, _)) => {
+                  role equals roleObject
+                }
+              }
+            )
+          )
     )
   }
 }

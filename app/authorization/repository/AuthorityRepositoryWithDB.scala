@@ -1,22 +1,23 @@
 package authorization.repository
 
+import controllers.DataSetForDemo
+
 import authorization.ResourceId
 import authorization.TypedIdRoleAndUpdateAtMap
-import controllers.DataSetForDemo
 import com.google.inject.Inject
-import scala.concurrent.Future
+import play.api.Logging
 import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
-class AuthorityRepositoryWithDB @Inject() (
-    dataSet: DataSetForDemo,
-    implicit val ec: ExecutionContext
-) extends AuthorityRepository {
+class AuthorityRepositoryWithDB @Inject() (dataSet: DataSetForDemo)(implicit
+    ec: ExecutionContext
+) extends AuthorityRepository
+    with Logging {
 
   override def getTypedIdRoleAndUpdateAtMap
-      : ResourceId => Future[TypedIdRoleAndUpdateAtMap] =
+      : ResourceId => Future[Either[Error, TypedIdRoleAndUpdateAtMap]] =
     (resourceId: ResourceId) => {
-      Thread.sleep(3000)
-      Future(dataSet.allowedMap)
-      //   Future(Map.empty)
+      Future.successful(Right(dataSet.allowedMap))
+      // Future.successful(Left(DBError("no value")))
     }
 }

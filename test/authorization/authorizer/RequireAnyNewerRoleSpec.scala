@@ -8,6 +8,7 @@ import java.time.Instant
 import java.util.Date
 import oidc.profile.OidcProfile
 import org.scalatestplus.play.PlaySpec
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 class RequireAnyNewerRoleSpec extends PlaySpec {
@@ -32,11 +33,15 @@ class RequireAnyNewerRoleSpec extends PlaySpec {
         )
 
       val resultOfNotIncluded =
-        new RequireAnyNewerRole(notIncludedAllowedMap).isProfileAuthorized(
-          null,
-          null,
-          profile
+        RequireAnyNewerRole(
+          "test",
+          (test) => Future.successful(Right((notIncludedAllowedMap)))
         )
+          .isProfileAuthorized(
+            null,
+            null,
+            profile
+          )
 
       resultOfNotIncluded mustBe (false)
     }
@@ -58,15 +63,18 @@ class RequireAnyNewerRoleSpec extends PlaySpec {
             )
           )
 
-        val resultOfNewerThan = new RequireAnyNewerRole(
-          newerThanUpdateAtOfProfileAllowedMap
+        val resultOfNewerThan = RequireAnyNewerRole(
+          "test",
+          (test) =>
+            Future.successful(Right(newerThanUpdateAtOfProfileAllowedMap))
         ).isProfileAuthorized(
           null,
           null,
           profile
         )
-        val resultOfEqualTo = new RequireAnyNewerRole(
-          equalToUpdateAtOfProfileAllowedMap
+        val resultOfEqualTo = RequireAnyNewerRole(
+          "test",
+          (test) => Future.successful(Right(equalToUpdateAtOfProfileAllowedMap))
         ).isProfileAuthorized(
           null,
           null,
@@ -82,11 +90,15 @@ class RequireAnyNewerRoleSpec extends PlaySpec {
         val allowedMap: TypedIdRoleAndUpdateAtMap =
           Map(testTypedId -> RoleAndUpdateAt(Owner, olderJavaTimeInstant))
 
-        val result = new RequireAnyNewerRole(allowedMap).isProfileAuthorized(
-          null,
-          null,
-          profile
-        )
+        val result =
+          RequireAnyNewerRole(
+            "test",
+            (test) => Future.successful(Right(allowedMap))
+          ).isProfileAuthorized(
+            null,
+            null,
+            profile
+          )
 
         result mustBe (true)
       }
@@ -94,22 +106,32 @@ class RequireAnyNewerRoleSpec extends PlaySpec {
 
   "RequireAnyNewerRole.Of(Owner)" should {
     "return false, if allowedMap does not include Contributor RoleAndUpdate." in {
+      implicit val ec = scala.concurrent.ExecutionContext.global
+
       val notIncludeOwnerAllowedMap =
         Map(testTypedId -> RoleAndUpdateAt(Contributor, olderJavaTimeInstant))
 
       val result = RequireAnyNewerRole
-        .Of(Owner)(notIncludeOwnerAllowedMap)
+        .Of(Owner)(
+          "test",
+          (test) => Future.successful(Right(notIncludeOwnerAllowedMap))
+        )
         .isProfileAuthorized(null, null, profile)
 
       result mustBe (false)
     }
 
     "return true, if allowedMap includes Owner RoleAndUpdate." in {
+      implicit val ec = scala.concurrent.ExecutionContext.global
+
       val includeOwnerAllowedMap =
         Map(testTypedId -> RoleAndUpdateAt(Owner, olderJavaTimeInstant))
 
       val result = RequireAnyNewerRole
-        .Of(Owner)(includeOwnerAllowedMap)
+        .Of(Owner)(
+          "test",
+          (test) => Future.successful(Right(includeOwnerAllowedMap))
+        )
         .isProfileAuthorized(null, null, profile)
 
       result mustBe (true)

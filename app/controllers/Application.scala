@@ -22,8 +22,6 @@ import play.api.Logger
 import play.api.Logging
 import play.api.mvc.RequestHeader
 import scala.jdk.OptionConverters._
-import scala.util.Failure
-import scala.util.Success
 
 class Application @Inject() (
     val controllerComponents: SecurityComponents,
@@ -52,7 +50,7 @@ class Application @Inject() (
   private def putIfAbsentAuthorizer(
       config: Config,
       name: String,
-      authorizer: Authorizer
+      authorizer: => Authorizer
   ): Unit = {
     if (!config.getAuthorizers().containsKey(name)) {
       config.addAuthorizer(name, authorizer)
@@ -65,18 +63,15 @@ class Application @Inject() (
     }
   def googleOidcIndexWithAuthorizer = {
     val authorizerName = dataSet.ownerAuthorizerName
-    val f = repo.getTypedIdRoleAndUpdateAtMap(dataSet.resourceIdName)
-    f.foreach { typedMap =>
-      val allowedMapReadFunc: Function1[ResourceId, TypedIdRoleAndUpdateAtMap] =
-        (resourceId: ResourceId) => typedMap
-
-      config.addAuthorizer(
-        authorizerName,
-        RequireAnyNewerRole.Of(Owner)(
-          allowedMapReadFunc(dataSet.resourceIdName)
-        )
+    putIfAbsentAuthorizer(
+      config,
+      authorizerName,
+      RequireAnyNewerRole.Of(Owner)(
+        dataSet.resourceIdName,
+        repo.getTypedIdRoleAndUpdateAtMap
       )
-    }
+    )
+
     Secure(clients = "GoogleOidcClient", authorizers = authorizerName) {
       implicit request =>
         Ok(views.html.index(getProfile(request)))
@@ -89,18 +84,14 @@ class Application @Inject() (
     }
   def lineOidcIndexWithAuthorizer = {
     val authorizerName = dataSet.anyAuthorizerName
-    val f = repo.getTypedIdRoleAndUpdateAtMap(dataSet.resourceIdName)
-    f.foreach { typedMap =>
-      val allowedMapReadFunc: Function1[ResourceId, TypedIdRoleAndUpdateAtMap] =
-        (resourceId: ResourceId) => typedMap
-
-      config.addAuthorizer(
-        authorizerName,
-        RequireAnyNewerRole(
-          allowedMapReadFunc(dataSet.resourceIdName)
-        )
+    putIfAbsentAuthorizer(
+      config,
+      authorizerName,
+      RequireAnyNewerRole(
+        dataSet.resourceIdName,
+        repo.getTypedIdRoleAndUpdateAtMap
       )
-    }
+    )
 
     Secure(clients = "LineOidcClient", authorizers = authorizerName) {
       implicit request =>
@@ -147,19 +138,11 @@ class Application @Inject() (
   private def showAllCache: Unit = {
     val loggerName = this.getClass().toString + "#showCache"
     val logger = Logger(loggerName)
-
     val cacheKey = dataSet.resourceIdName
-    cache.get[TypedIdRoleAndUpdateAtMap](cacheKey).onComplete {
-      case Failure(exception) => {
-        logger.warn(s"exception occur: ${exception.toString()}")
-      }
-      case Success(opt) => {
-        opt match {
-          case Some(typedMap) =>
-            logger.info(s"cached TypedIdRoleAndUpdateAtMap: ${typedMap}")
-          case None => logger.info("No cache")
-        }
-      }
+    cache.get[TypedIdRoleAndUpdateAtMap](cacheKey).map {
+      case Some(typedMap) =>
+        logger.info(s"cached TypedIdRoleAndUpdateAtMap: ${typedMap}")
+      case None => logger.info("No cache")
     }
   }
 
@@ -170,17 +153,19 @@ class Application @Inject() (
 
   def addCache = Action { implicit request =>
     val cacheKey = dataSet.resourceIdName
-    cache.set(
-      cacheKey,
-      dataSet.allowedMap
-    )
-    showAllCache
+    cache
+      .set(
+        cacheKey,
+        dataSet.allowedMap
+      )
+      .foreach(_ => showAllCache)
     Ok(views.html.demoPage(getProfile(request)))
   }
 
   def removeCache = Action { implicit request =>
-    cache.removeAll()
-    showAllCache
+    cache
+      .removeAll()
+      .foreach(_ => showAllCache)
     Ok(views.html.demoPage(getProfile(request)))
   }
 }
