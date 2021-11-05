@@ -1,5 +1,5 @@
 @import oidc.profile.OidcProfile
-@(profile: Option[oidc.profile.OidcProfile])(implicit request: play.api.mvc.Request[Any])
+@(profile: Option[oidc.profile.OidcProfile])(implicit request: play.api.mvc.RequestHeader)
 
 @main("Welcome") {
 <h1>Welcome!!</h1>

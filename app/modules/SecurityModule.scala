@@ -5,6 +5,7 @@ import authorization.repository._
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
 import com.nimbusds.jose.JWSAlgorithm
+import controllers.ErrorHandler
 import java.nio.charset.StandardCharsets
 import oidc.client.GoogleOidcClient
 import oidc.client.LineOidcClient
@@ -19,9 +20,7 @@ import org.pac4j.play.http.PlayHttpActionAdapter
 import org.pac4j.play.LogoutController
 import org.pac4j.play.scala.DefaultSecurityComponents
 import org.pac4j.play.scala.SecurityComponents
-import org.pac4j.play.store.{
-  PlayCookieSessionStore => pac4jPlayCookieSessionStore
-}
+import org.pac4j.play.store.{PlayCookieSessionStore => pac4jPlayCookieSessionStore}
 import org.pac4j.play.store.ShiroAesDataEncrypter
 import play.api.Configuration
 import play.api.Environment
@@ -119,7 +118,8 @@ class SecurityModule(environment: Environment, configuration: Configuration)
   def provideConfig(
       googleOidcClient: GoogleOidcClient,
       lineOidcClient: LineOidcClient,
-      authorityRepository: AuthorityRepositoryWithCache
+      authorityRepository: AuthorityRepositoryWithCache,
+      sessionStore: SessionStore
   ): Config = {
     val clients =
       new Clients(
@@ -129,7 +129,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
       )
 
     val config = new Config(clients)
-    config.setHttpActionAdapter(new PlayHttpActionAdapter())
+    config.setHttpActionAdapter(ErrorHandler(sessionStore))
     config
   }
 }

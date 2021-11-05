@@ -17,7 +17,7 @@ class AuthorityRepositoryWithDB @Inject() (dataSet: DataSetForDemo)(implicit
   override def getTypedIdRoleAndUpdateAtMap
       : ResourceId => Future[Either[Error, TypedIdRoleAndUpdateAtMap]] =
     (resourceId: ResourceId) => {
-      Future.successful(Right(dataSet.allowedMap))
-      // Future.successful(Left(DBError("no value")))
+      // Future.successful(Right(dataSet.allowedMap))
+      Future.successful(Left(DBError("no value")))
     }
 }

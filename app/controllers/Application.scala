@@ -20,6 +20,7 @@ import org.pac4j.play.scala.SecurityComponents
 import play.api.cache.AsyncCacheApi
 import play.api.Logger
 import play.api.Logging
+import play.api.mvc.AnyContent
 import play.api.mvc.RequestHeader
 import scala.jdk.OptionConverters._
 
@@ -28,22 +29,13 @@ class Application @Inject() (
     @Named("repoCache") repo: AuthorityRepository,
     cache: AsyncCacheApi,
     dataSet: DataSetForDemo
-) extends Security[CommonProfile]
+) extends Security[OidcProfile]
     with Logging {
 
   implicit val ec = controllerComponents.executionContext
+  implicit val sStore = controllerComponents.sessionStore
 
-  private def getProfile(implicit
-      request: RequestHeader
-  ): Option[OidcProfile] = {
-    val context = new PlayWebContext(request)
-    val profileManager =
-      new ProfileManager(context, sessionStore)
-    val profile = profileManager.getProfile(classOf[OidcProfile])
-    profile.toScala
-  }
-
-  def index = Action { implicit request =>
+  def index = Action { implicit request: RequestHeader =>
     Ok(views.html.index(getProfile(request)))
   }
 
@@ -58,8 +50,9 @@ class Application @Inject() (
   }
 
   def googleOidcIndex =
-    Secure(clients = "GoogleOidcClient") { implicit request =>
-      Ok(views.html.index(getProfile(request)))
+    Secure(clients = "GoogleOidcClient") { implicit request: AuthenticatedRequest[AnyContent] =>
+      val profile = profiles.headOption
+      Ok(views.html.index(profile))
     }
   def googleOidcIndexWithAuthorizer = {
     val authorizerName = dataSet.ownerAuthorizerName
@@ -73,14 +66,16 @@ class Application @Inject() (
     )
 
     Secure(clients = "GoogleOidcClient", authorizers = authorizerName) {
-      implicit request =>
-        Ok(views.html.index(getProfile(request)))
+      implicit request: AuthenticatedRequest[AnyContent] =>
+        val profile = profiles.headOption
+        Ok(views.html.index(profile))
     }
   }
 
   def lineOidcIndex =
-    Secure(clients = "LineOidcClient") { implicit request =>
-      Ok(views.html.index(getProfile(request)))
+    Secure(clients = "LineOidcClient") { implicit request: AuthenticatedRequest[AnyContent] =>
+      val profile = profiles.headOption
+      Ok(views.html.index(profile))
     }
   def lineOidcIndexWithAuthorizer = {
     val authorizerName = dataSet.anyAuthorizerName
@@ -94,8 +89,9 @@ class Application @Inject() (
     )
 
     Secure(clients = "LineOidcClient", authorizers = authorizerName) {
-      implicit request =>
-        Ok(views.html.index(getProfile(request)))
+      implicit request: AuthenticatedRequest[AnyContent] =>
+        val profile = profiles.headOption
+        Ok(views.html.index(profile))
     }
   }
 
@@ -108,7 +104,7 @@ class Application @Inject() (
   }
 
   def enforceSignIn(optQueryRequestURL: Option[String])(oidcClient: String) =
-    Action { implicit request =>
+    Action { implicit request: RequestHeader =>
       val context = new PlayWebContext(request)
 
       val scheme = if (request.connection.secure) "https" else "http"
@@ -141,17 +137,32 @@ class Application @Inject() (
     val cacheKey = dataSet.resourceIdName
     cache.get[TypedIdRoleAndUpdateAtMap](cacheKey).map {
       case Some(typedMap) =>
-        logger.info(s"cached TypedIdRoleAndUpdateAtMap: ${typedMap}")
-      case None => logger.info("No cache")
+        logger.debug(s"cached TypedIdRoleAndUpdateAtMap: ${typedMap}")
+      case None => logger.debug("No cache")
     }
   }
 
-  def demoPage = Action { implicit request =>
+  def demoPage = Action { implicit request: RequestHeader =>
     showAllCache
-    Ok(views.html.demoPage(getProfile(request)))
+
+    // authority check logic add
+    val authorized: Boolean =
+      getProfile(request)
+        .map(profile =>
+          RequireAnyNewerRole
+            .isProfileSignInAfterUpdate(
+              profile,
+              repo
+                .getTypedIdRoleAndUpdateAtMap(dataSet.resourceIdName)
+            )
+        )
+        .getOrElse(false)
+
+    // boolean: html content read or not
+    Ok(views.html.demoPage(getProfile(request), authorized))
   }
 
-  def addCache = Action { implicit request =>
+  def addCache = Action { implicit request: RequestHeader =>
     val cacheKey = dataSet.resourceIdName
     cache
       .set(
@@ -162,7 +173,7 @@ class Application @Inject() (
     Ok(views.html.demoPage(getProfile(request)))
   }
 
-  def removeCache = Action { implicit request =>
+  def removeCache = Action { implicit request: RequestHeader =>
     cache
       .removeAll()
       .foreach(_ => showAllCache)

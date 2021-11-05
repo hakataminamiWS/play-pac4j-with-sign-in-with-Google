@@ -1,8 +1,11 @@
 @import oidc.profile.OidcProfile
-@(profile: Option[oidc.profile.OidcProfile])(implicit request: play.api.mvc.Request[Any])
+@(profile: Option[oidc.profile.OidcProfile],
+authorized: Boolean = false)(implicit request: play.api.mvc.RequestHeader)
 
 @main("Demo Page") {
 <h1>Demo Page</h1>
+
+@if(authorized) {@authorizedContent()}
 
 @profile match {
 case Some(pf) => {

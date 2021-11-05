@@ -27,7 +27,7 @@ class AuthorityRepositoryWithCache @Inject() (
             dbRepository
               .getTypedIdRoleAndUpdateAtMap(resourceId)
               .map(_.map { map =>
-                logger.info(s"cache set, key: ${cacheKey}, value: ${map}")
+                logger.debug(s"cache set, key: ${cacheKey}, value: ${map}")
                 cache.set(cacheKey, map)
                 map
               })

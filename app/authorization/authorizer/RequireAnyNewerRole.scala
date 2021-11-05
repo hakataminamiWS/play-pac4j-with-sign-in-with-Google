@@ -51,7 +51,7 @@ case class RequireAnyNewerRole(
 }
 
 object RequireAnyNewerRole extends Logging {
-  private def isProfileSignInAfterUpdate(
+  def isProfileSignInAfterUpdate(
       profile: OidcProfile,
       allowedMap: Future[Either[Error, TypedIdRoleAndUpdateAtMap]]
   ): Boolean = {
@@ -70,7 +70,7 @@ object RequireAnyNewerRole extends Logging {
         }
       }
       case Left(error) => {
-        logger.info(s"error occur ${error}")
+        logger.debug(s"error occur ${error}")
         false
       }
     }
